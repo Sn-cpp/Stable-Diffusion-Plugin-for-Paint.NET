@@ -1,0 +1,115 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>DiffusionPlugin</RootNamespace>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <GenerateAssemblyInfo>False</GenerateAssemblyInfo>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <GenerateAssemblyInfo>False</GenerateAssemblyInfo>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Reference Include="CommunityToolkit.HighPerformance">
+      <HintPath>libs\CommunityToolkit.HighPerformance.dll</HintPath>
+    </Reference>
+    <Reference Include="ComputeSharp.Core">
+      <HintPath>libs\ComputeSharp.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="paintdotnet">
+      <HintPath>libs\paintdotnet.dll</HintPath>
+    </Reference>
+    <Reference Include="PaintDotNet.Base">
+      <HintPath>libs\PaintDotNet.Base.dll</HintPath>
+    </Reference>
+    <Reference Include="PaintDotNet.Collections">
+      <HintPath>libs\PaintDotNet.Collections.dll</HintPath>
+    </Reference>
+    <Reference Include="PaintDotNet.ComponentModel">
+      <HintPath>libs\PaintDotNet.ComponentModel.dll</HintPath>
+    </Reference>
+    <Reference Include="PaintDotNet.Core">
+      <HintPath>libs\PaintDotNet.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="PaintDotNet.Data">
+      <HintPath>libs\PaintDotNet.Data.dll</HintPath>
+    </Reference>
+    <Reference Include="PaintDotNet.Effects">
+      <HintPath>libs\PaintDotNet.Effects.dll</HintPath>
+    </Reference>
+    <Reference Include="PaintDotNet.Effects.Core">
+      <HintPath>libs\PaintDotNet.Effects.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="PaintDotNet.Effects.Gpu">
+      <HintPath>libs\PaintDotNet.Effects.Gpu.dll</HintPath>
+    </Reference>
+    <Reference Include="PaintDotNet.Effects.Legacy">
+      <HintPath>libs\PaintDotNet.Effects.Legacy.dll</HintPath>
+    </Reference>
+    <Reference Include="PaintDotNet.Framework">
+      <HintPath>libs\PaintDotNet.Framework.dll</HintPath>
+    </Reference>
+    <Reference Include="PaintDotNet.Fundamentals">
+      <HintPath>libs\PaintDotNet.Fundamentals.dll</HintPath>
+    </Reference>
+    <Reference Include="PaintDotNet.ObjectModel">
+      <HintPath>libs\PaintDotNet.ObjectModel.dll</HintPath>
+    </Reference>
+    <Reference Include="PaintDotNet.Plugins.Compatibility">
+      <HintPath>libs\PaintDotNet.Plugins.Compatibility.dll</HintPath>
+    </Reference>
+    <Reference Include="PaintDotNet.Primitives">
+      <HintPath>libs\PaintDotNet.Primitives.dll</HintPath>
+    </Reference>
+    <Reference Include="PaintDotNet.PropertySystem">
+      <HintPath>libs\PaintDotNet.PropertySystem.dll</HintPath>
+    </Reference>
+    <Reference Include="PaintDotNet.Resources">
+      <HintPath>libs\PaintDotNet.Resources.dll</HintPath>
+    </Reference>
+    <Reference Include="PaintDotNet.Runtime">
+      <HintPath>libs\PaintDotNet.Runtime.dll</HintPath>
+    </Reference>
+    <Reference Include="PaintDotNet.SystemLayer">
+      <HintPath>libs\PaintDotNet.SystemLayer.dll</HintPath>
+    </Reference>
+    <Reference Include="PaintDotNet.Systrace">
+      <HintPath>libs\PaintDotNet.Systrace.dll</HintPath>
+    </Reference>
+    <Reference Include="PaintDotNet.UI">
+      <HintPath>libs\PaintDotNet.UI.dll</HintPath>
+    </Reference>
+    <Reference Include="PaintDotNet.Windows">
+      <HintPath>libs\PaintDotNet.Windows.dll</HintPath>
+    </Reference>
+    <Reference Include="PaintDotNet.Windows.Core">
+      <HintPath>libs\PaintDotNet.Windows.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="PaintDotNet.Windows.Framework">
+      <HintPath>libs\PaintDotNet.Windows.Framework.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Drawing.Common">
+      <HintPath>libs\System.Drawing.Common.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Private.Windows.Core">
+      <HintPath>libs\System.Private.Windows.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Windows.Forms">
+      <HintPath>libs\System.Windows.Forms.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Windows.Forms.Primitives">
+      <HintPath>libs\System.Windows.Forms.Primitives.dll</HintPath>
+    </Reference>
+    <Reference Include="TerraFX.Interop.Windows">
+      <HintPath>libs\TerraFX.Interop.Windows.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+</Project>
