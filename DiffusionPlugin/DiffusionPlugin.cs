@@ -18,6 +18,7 @@ using System.Drawing;
 using System.Drawing.Imaging;
 using System.Data;
 using PropertyCollection = PaintDotNet.PropertySystem.PropertyCollection;
+using static PaintDotNet.Effects.SurfaceBlurEffect;
 
 [assembly: AssemblyTitle("DiffusionPlugin plugin for Paint.NET")]
 [assembly: AssemblyDescription("Diffusion selected pixels")]
@@ -159,7 +160,7 @@ namespace DiffusionPlugin
             props.Add(new StringProperty(PropertyNames.AlertStr, ""));
             props.Add(new StringProperty(PropertyNames.PromptStr, "", 32767));
             props.Add(new StringProperty(PropertyNames.NgtPromptStr, "", 32767));
-            props.Add(new Int32Property(PropertyNames.StepCount, 80, 1, 150));
+            props.Add(new Int32Property(PropertyNames.StepCount, 50, 1, 150));
             props.Add(new Int32Property(PropertyNames.DeNoiseStrength, 90, 0, 100));
             props.Add(new Int32Property(PropertyNames.GenButton, 0, 0, 255));
 
@@ -212,9 +213,7 @@ namespace DiffusionPlugin
             base.OnInitializeRenderInfo(renderInfo);            
         }
 
-        //protected void OnPropertyChanged(string propertyName) {
-
-        //}
+   
 
         #region User Entered Code
 
@@ -222,13 +221,13 @@ namespace DiffusionPlugin
         LabelComment alertStr = "Alert: Please enter prompts"; // Alert
         MultiLineTextboxControl promptStr = ""; // [32767] Prompts:
         MultiLineTextboxControl ngtPromptStr = ""; // [32767] Negative Prompts (optional):
-        IntSliderControl stepCount = 80; // [1,150] Steps:
+        IntSliderControl stepCount = 50; // [1,150] Steps:
         IntSliderControl deNoiseStrength = 90; // [0,100] Denoising Strength (%):
-        ReseedButtonControl genButton = 0; // Generate
+        ReseedButtonControl genButton = oldValue; // Generate
         #endregion
 
         /// <summary>
-        /// Store old state of Generate button, for pressed event checking.
+        /// Store old state of Generate button.
         /// </summary>
         public static System.Byte oldValue = 0;
 
@@ -260,84 +259,95 @@ namespace DiffusionPlugin
             return client;
         }
 
+        protected void OnPropertyChanged(string propertyName) {
+            throw new Exception(propertyName);
+
+        }
+
+
         /// <summary>
         /// Detect Generate button click and start sending HTTP Request to server, suffers from the multiple button click bug (Un-solved).
         /// </summary>
         /// <param name="newToken"></param>
         protected override void OnSetToken(PropertyBasedEffectConfigToken newToken)
         {
-            //Token update
+            //Read genButton value and to-be-updated value stored in the token
+            var genButtonValue = genButton;
+            var newValue = newToken.GetProperty<Int32Property>(PropertyNames.GenButton).Value;
+
+
+
             promptStr = newToken.GetProperty<StringProperty>(PropertyNames.PromptStr).Value;
             ngtPromptStr = newToken.GetProperty<StringProperty>(PropertyNames.NgtPromptStr).Value;
             stepCount = newToken.GetProperty<Int32Property>(PropertyNames.StepCount).Value;
             deNoiseStrength = newToken.GetProperty<Int32Property>(PropertyNames.DeNoiseStrength).Value;
             genButton = (byte)newToken.GetProperty<Int32Property>(PropertyNames.GenButton).Value;
-
             base.OnSetToken(newToken);
+
+            //Skip if Generate button has not been clicked
+            if (genButtonValue + 1 != newValue)
+                return;
 
             //Skip if there is no prompt
             if (promptStr.Length <= 0)
                 return;
 
-            //Skip if there is no mask
-            if (Environment.Selection.MaskBitmap.Size.Width <= 0 || Environment.Selection.MaskBitmap.Size.Height <= 0)
+            var selectedArea = Environment.Selection.RenderBounds.Area;
+            var Size = Environment.Document.Size;
+
+            //If there is no selection exist
+            if (selectedArea >= Size.Width * Size.Height)
                 return;
 
-            //If Generate button has been pressed
-            if (genButton != oldValue)
+
+            //Condition satisfied, start inpainting
+
+            //Get image and mask as Base64
+            string canvasB64 = GetCanvasAsBase64();
+            string maskB64 = GetMask_by_SelectedZone_AsBase64();
+
+            //Get prompt and hyper-parameters
+            string prompt = promptStr;
+            string negativePrompt = ngtPromptStr;
+            int steps = stepCount;
+            double denoise = (deNoiseStrength * 1.0) / 100;
+
+            //Start an async POST request to the server
+            string diffusedB64 = PostDiffusionAPI(canvasB64, maskB64, prompt, negativePrompt, steps, denoise).GetAwaiter().GetResult();
+
+            //Receive and process the base64 string result into an image
+            if (diffusedB64 != null)
             {
-                //Update state
-                oldValue = genButton;
+                byte[] imageBytes = Convert.FromBase64String(diffusedB64);
+                using var stream = new MemoryStream(imageBytes);
+                using var bmp = new System.Drawing.Bitmap(stream);
+                Surface surface = new Surface(bmp.Width, bmp.Height);
 
-                //Get image and mask as Base64
-                string canvasB64 = GetCanvasAsBase64();
-                string maskB64 = GetMask_by_SelectedZone_AsBase64();
+                BitmapData bmpData = bmp.LockBits(
+                        new Rectangle(0, 0, bmp.Width, bmp.Height),
+                        ImageLockMode.ReadOnly,
+                        System.Drawing.Imaging.PixelFormat.Format32bppArgb
+                    );
 
-                //Get prompt and hyper-parameters
-                string prompt = promptStr;
-                string negativePrompt = ngtPromptStr;
-                int steps = stepCount;
-                double denoise = (deNoiseStrength * 1.0) / 100;
-
-                //Start an async POST request to the server
-                string diffusedB64 = PostDiffusionAPI(canvasB64, maskB64, prompt, negativePrompt, steps, denoise).GetAwaiter().GetResult();
-
-                //Receive and process the base64 string result into an image
-                if (diffusedB64 != null)
+                try
                 {
-                    byte[] imageBytes = Convert.FromBase64String(diffusedB64);
-                    using var stream = new MemoryStream(imageBytes);
-                    using var bmp = new System.Drawing.Bitmap(stream);
-                    Surface surface = new Surface(bmp.Width, bmp.Height);
-
-                    BitmapData bmpData = bmp.LockBits(
-                            new Rectangle(0, 0, bmp.Width, bmp.Height),
-                            ImageLockMode.ReadOnly,
-                            System.Drawing.Imaging.PixelFormat.Format32bppArgb
-                        );
-
-                    try
+                    unsafe
                     {
-                        unsafe
+                        ColorBgra* srcPtr = (ColorBgra*)bmpData.Scan0.ToPointer();
+                        for (int y = 0; y < bmp.Height; y++)
                         {
-                            ColorBgra* srcPtr = (ColorBgra*)bmpData.Scan0.ToPointer();
-                            for (int y = 0; y < bmp.Height; y++)
+                            for (int x = 0; x < bmp.Width; x++)
                             {
-                                for (int x = 0; x < bmp.Width; x++)
-                                {
-                                    surface[x, y] = srcPtr[y * (bmpData.Stride / 4) + x];
-                                }
+                                surface[x, y] = srcPtr[y * (bmpData.Stride / 4) + x];
                             }
                         }
                     }
-                    finally
-                    {
-                        bmp.UnlockBits(bmpData);
-                    }
-                    diffusedImg = surface;
-
-
                 }
+                finally
+                {
+                    bmp.UnlockBits(bmpData);
+                }
+                diffusedImg = surface;
             }
         }
 
@@ -504,14 +514,7 @@ namespace DiffusionPlugin
         {
             if (disposing)
             {
-                if (oldValue > 0)
-                {
-                    this.Token.SetPropertyValue(PropertyNames.PromptStr, "");
-                    this.Token.SetPropertyValue(PropertyNames.NgtPromptStr, "");
-                    this.Token.SetPropertyValue(PropertyNames.DeNoiseStrength, 90);
-                    this.Token.SetPropertyValue(PropertyNames.StepCount, 80);
-                    this.Token.SetPropertyValue(PropertyNames.GenButton, 0);
-                }
+                oldValue = genButton;
                 if (diffusedImg != null)
                 {
                     diffusedImg.Dispose();
